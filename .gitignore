@@ -1,0 +1,9 @@
+node_modules
+.vscode
+.claude
+
+.turbo/
+
+ENGINEERING_GUIDE.md
+
+.DS_Store
