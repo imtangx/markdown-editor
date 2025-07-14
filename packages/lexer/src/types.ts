@@ -4,6 +4,9 @@ import type { Position } from '@markdown-editor/shared';
  * Token类型枚举
  */
 export enum TokenType {
+  // ========== 根元素 ==========
+  DOCUMENT = 'document',
+
   // ========== 块级元素 ==========
   /** 标题，如 `# Heading` */
   HEADING = 'heading',
@@ -13,7 +16,9 @@ export enum TokenType {
   CODE_BLOCK = 'code_block',
   /** 引用块，如 `> Quote` */
   QUOTE = 'quote',
-  /** 列表项，如 `- Item` */
+  /** 无序列表，如 `- Item` */
+  LIST = 'list',
+  /** 无序列表项，如 `- Item` */
   LIST_ITEM = 'list_item',
   /** 水平分割线，如 `---` */
   HORIZONTAL_RULE = 'horizontal_rule',
