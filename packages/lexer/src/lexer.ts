@@ -150,6 +150,7 @@ export class MarkdownLexer {
    * 扫描标题标记
    */
   private scanHash(): Token {
+    const startOffset = this.offset;
     let count = 0;
 
     /** 最多6级标题 */
@@ -158,7 +159,12 @@ export class MarkdownLexer {
       count++;
     }
 
-    return this.createToken(TokenType.HASH, '#'.repeat(count));
+    if (isWhitespace(this.peek())) {
+      return this.createToken(TokenType.HEADING, '#'.repeat(count));
+    } else {
+      this.offset = startOffset; // 回退到初始位置
+      return this.scanText(); // 按普通文本处理
+    }
   }
 
   /**
