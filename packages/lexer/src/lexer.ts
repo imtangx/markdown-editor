@@ -111,8 +111,14 @@ export class MarkdownLexer {
         return this.scanMinus();
       case '.':
         return this.scanDot();
-      case '\n':
-        return this.scanNewline();
+      case '\n': {
+        const newlineToken = this.scanNewline();
+        if (newlineToken) {
+          return newlineToken;
+        }
+        // 单个换行符转换为空格
+        return this.createToken(TokenType.WHITESPACE, ' ');
+      }
       case '\t':
         return this.scanTab();
       case ' ':
@@ -160,6 +166,7 @@ export class MarkdownLexer {
     }
 
     if (isWhitespace(this.peek())) {
+      this.advance(); // 跳过空格
       return this.createToken(TokenType.HEADING, '#'.repeat(count));
     } else {
       this.offset = startOffset; // 回退到初始位置
@@ -179,7 +186,7 @@ export class MarkdownLexer {
       return this.createToken(TokenType.BOLD, '**');
     }
 
-    return this.createToken(TokenType.ASTERISK, '*');
+    return this.createToken(TokenType.ITALIC, '*');
   }
 
   /**
@@ -196,6 +203,8 @@ export class MarkdownLexer {
     /** 块级代码 */
     if (count === 3) {
       return this.createToken(TokenType.CODE_BLOCK, '`'.repeat(count));
+    } else if (count === 1) {
+      return this.createToken(TokenType.CODE, '`'.repeat(count));
     } else {
       return this.createToken(TokenType.BACKTICK, '`'.repeat(count));
     }
@@ -245,8 +254,20 @@ export class MarkdownLexer {
    * 扫描大于号（引用）
    */
   private scanGreaterThan(): Token {
-    this.advance();
-    return this.createToken(TokenType.GREATER_THAN, '>');
+    let count = 0;
+
+    while (this.peek() === '>') {
+      this.advance();
+      count++;
+    }
+
+    if (count === 1 && isWhitespace(this.peek())) {
+      this.advance(); // 跳过空格
+      return this.createToken(TokenType.QUOTE, '>'); // 引用标记
+    }
+
+    // 返回多个大于号
+    return this.createToken(TokenType.GREATER_THAN, '>'.repeat(count));
   }
 
   /**
@@ -263,6 +284,12 @@ export class MarkdownLexer {
     /** 是否是分割线 */
     if (count >= 3) {
       return this.createToken(TokenType.HORIZONTAL_RULE, '-'.repeat(count));
+    }
+
+    /** 是否是列表项 */
+    if (count === 1 && isWhitespace(this.peek())) {
+      this.advance(); // 跳过空格
+      return this.createToken(TokenType.LIST_ITEM, '-');
     }
 
     return this.createToken(TokenType.MINUS, '-'.repeat(count));
@@ -292,14 +319,25 @@ export class MarkdownLexer {
   /**
    * 扫描换行符
    */
-  private scanNewline(): Token {
-    this.advance();
+  private scanNewline(): Token | null {
+    let count = 0;
 
-    // 换行
-    this.line++;
-    this.column = 1;
+    while (this.peek() === '\n') {
+      this.advance();
+      count++;
+      this.line++;
+      this.column = 1;
+    }
 
-    return this.createToken(TokenType.NEWLINE, '\n');
+    if (count >= 2) {
+      // 两个或更多换行符 -> 生成一个 NEWLINE Token（段落分隔）
+      return this.createToken(TokenType.NEWLINE, '\n'.repeat(2));
+    } else if (count === 1) {
+      // 单个换行符 -> 转换为空格（这里不生成 Token，由后续逻辑处理）
+      return null;
+    }
+
+    return null;
   }
 
   /**
