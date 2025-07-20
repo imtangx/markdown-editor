@@ -283,7 +283,7 @@ export class ReactRenderer implements Visitor<ReactElement | ReactNode> {
   visitNewLine(_node: NewLineNode): ReactElement {
     const Component = this.options.components?.newline || 'br';
     const props = this.getProps('newline', {
-      className: this.getClassName('line-break'),
+      className: this.getClassName('new-line'),
     });
 
     return this.React.createElement(Component, props);
