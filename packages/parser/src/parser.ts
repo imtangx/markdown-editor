@@ -179,13 +179,9 @@ export class RecursiveDescentParser implements Parser {
    * 解析列表
    */
   private parseList(): ListNode {
-    const items: ListItemNode[] = [];
     const firstToken = this.peek();
     const ordered = firstToken.value?.match(/^\d+\./) !== null;
-
-    while (!this.isAtEnd() && this.check(TokenType.LIST_ITEM)) {
-      items.push(this.parseListItem());
-    }
+    const items = this.parseNestedListItems(0); // 从层级0开始
 
     return nodeFactory.createList(ordered, items, {
       line: firstToken.position.line,
@@ -195,12 +191,95 @@ export class RecursiveDescentParser implements Parser {
   }
 
   /**
+   * 解析嵌套列表项
+   */
+  private parseNestedListItems(baseIndent: number): ListItemNode[] {
+    const items: ListItemNode[] = [];
+
+    while (!this.isAtEnd() && this.check(TokenType.LIST_ITEM)) {
+      // 检查当前列表项的缩进层级
+      const indent = this.getCurrentIndent();
+
+      if (indent < baseIndent) {
+        // 缩进减少，回到上一级
+        break;
+      } else if (indent === baseIndent) {
+        // 同一级别的列表项
+        items.push(this.parseListItem());
+      } else {
+        // 缩进增加，但这种情况应该在parseListItem中处理
+        items.push(this.parseListItem());
+      }
+    }
+
+    return items;
+  }
+
+  /**
+   * 获取当前列表项前的缩进层级
+   */
+  private getCurrentIndent(): number {
+    // 查看LIST_ITEM token之前是否有WHITESPACE token
+    const currentPos = this.current;
+    if (currentPos > 0) {
+      const prevToken = this.tokens[currentPos - 1];
+      if (prevToken.type === TokenType.WHITESPACE) {
+        // 计算缩进层级（每2个空格为一级）
+        return Math.floor((prevToken.value?.length || 0) / 2);
+      }
+    }
+    return 0; // 没有缩进
+  }
+
+  /**
    * 解析列表项
    */
   private parseListItem(): ListItemNode {
+    const currentIndent = this.getCurrentIndent();
     const token = this.consume(TokenType.LIST_ITEM, 'Expected list item token');
-    const checked = token.value?.includes('[x]') || token.value?.includes('[X]');
-    const children = this.parseBlocks();
+
+    // 检查是否是任务列表项
+    let checked: boolean | undefined = undefined;
+    if (token.value?.includes('[x]') || token.value?.includes('[X]')) {
+      checked = true;
+    } else if (token.value?.includes('[ ]')) {
+      checked = false;
+    }
+    // 如果不包含任何复选框标记，checked保持undefined（普通列表项）
+
+    // 解析列表项的内联内容并包装为段落
+    const inlines = this.parseInlines();
+    const children: BlockNode[] = [];
+
+    if (inlines.length > 0) {
+      const paragraph = nodeFactory.createParagraph(inlines, {
+        line: token.position.line,
+        column: token.position.column,
+        offset: token.position.offset,
+      });
+      children.push(paragraph);
+    }
+
+    // 检查是否有嵌套的子列表项
+    if (!this.isAtEnd() && this.check(TokenType.LIST_ITEM)) {
+      const nextIndent = this.getCurrentIndent();
+      if (nextIndent > currentIndent) {
+        // 有更深层级的子列表
+        const nestedItems = this.parseNestedListItems(nextIndent);
+        if (nestedItems.length > 0) {
+          // 确定子列表是有序还是无序
+          const firstChildToken = this.tokens[this.current - nestedItems.length];
+          const childOrdered = firstChildToken.value?.match(/^\d+\./) !== null;
+
+          const nestedList = nodeFactory.createList(childOrdered, nestedItems, {
+            line: token.position.line,
+            column: token.position.column,
+            offset: token.position.offset,
+          });
+          children.push(nestedList);
+        }
+      }
+    }
 
     return nodeFactory.createListItem(
       children,
