@@ -1,0 +1,41 @@
+{
+  "name": "@markdown-editor/editor",
+  "version": "0.0.0",
+  "description": "CodeMirror-based markdown editor",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "build:watch": "tsup --watch",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest --watch"
+  },
+  "dependencies": {
+    "@codemirror/commands": "^6.2.4",
+    "@codemirror/lang-markdown": "^6.2.0",
+    "@codemirror/language": "^6.8.0",
+    "@codemirror/search": "^6.5.2",
+    "@codemirror/state": "^6.2.1",
+    "@codemirror/view": "^6.16.0",
+    "@lezer/highlight": "^1.2.1",
+    "@markdown-editor/shared": "workspace:*"
+  },
+  "devDependencies": {
+    "tsup": "^8.3.5",
+    "typescript": "^5.8.3",
+    "vitest": "^3.2.4"
+  }
+}
