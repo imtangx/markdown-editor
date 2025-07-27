@@ -61,6 +61,7 @@ class HTMLEscaper {
 export class HTMLRenderer implements Visitor<string> {
   private options: HTMLRenderOptions;
   private indentLevel = 0;
+  private listNestLevel = 0; // 跟踪列表嵌套层级
 
   constructor(options: HTMLRenderOptions = {}) {
     this.options = {
@@ -165,12 +166,24 @@ export class HTMLRenderer implements Visitor<string> {
   }
 
   visitList(node: ListNode): string {
+    const currentNestLevel = this.listNestLevel;
+    this.listNestLevel++; // 进入嵌套层级
+
     const content = this.renderChildren(node.children || []);
+
+    this.listNestLevel = currentNestLevel; // 恢复嵌套层级
+
     const tag = node.ordered ? 'ol' : 'ul';
     const className = this.getClassName('list', node.ordered ? 'ordered' : 'unordered');
     const attrs = this.getCustomAttributes('list');
 
     const attributes: Record<string, string> = { class: className, ...attrs };
+
+    // 为嵌套列表容器添加padding-left样式（每层级一个tab=16px）
+    if (currentNestLevel > 0) {
+      attributes.style = `padding-left: ${currentNestLevel * 16}px;`;
+    }
+
     if (node.ordered && node.start && node.start !== 1) {
       attributes.start = node.start.toString();
     }
