@@ -124,7 +124,7 @@ describe('RecursiveDescentParser', () => {
 
       const list = ast.children[0] as any;
       expect(list.ordered).toBe(false);
-      expect(list.children).toHaveLength(1);
+      expect(list.children).toHaveLength(3);
 
       list.children.forEach((item: any) => {
         expect(item.type).toBe('list_item');
@@ -140,7 +140,7 @@ describe('RecursiveDescentParser', () => {
       expect(ast.children[0].type).toBe('list');
 
       const list = ast.children[0] as any;
-      expect(list.children).toHaveLength(1);
+      expect(list.children).toHaveLength(2);
 
       // expect(list.children[0].checked).toBe(true);
       // expect(list.children[1].checked).toBe(false);

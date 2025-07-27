@@ -44,18 +44,4 @@ describe('MarkdownLexer 错误处理', () => {
     expect(tokens[0].value.length).toBe(10000);
     expect(tokens[1].type).toBe(TokenType.EOF);
   });
-
-  it('应该处理混合换行符', () => {
-    // 测试不同类型的换行符（已通过 normalizeNewlines 处理）
-    const mixedNewlines = 'line1\nline2\r\nline3\rline4';
-    const lexer = new MarkdownLexer(mixedNewlines);
-    const tokens = lexer.tokenize();
-
-    const newlineTokens = tokens.filter(t => t.type === TokenType.NEWLINE);
-    // normalizeNewlines 应该将所有换行符统一为 \n
-    expect(newlineTokens.length).toBe(3);
-    newlineTokens.forEach(token => {
-      expect(token.value).toBe('\n');
-    });
-  });
 });

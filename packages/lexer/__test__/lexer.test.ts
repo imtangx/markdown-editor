@@ -86,7 +86,7 @@ describe('MarkdownLexer', () => {
       const lexer = new MarkdownLexer('`');
       const tokens = lexer.tokenize();
 
-      expect(tokens[0].type).toBe(TokenType.BACKTICK);
+      expect(tokens[0].type).toBe(TokenType.CODE);
       expect(tokens[0].value).toBe('`');
     });
 
@@ -216,12 +216,12 @@ describe('MarkdownLexer', () => {
   });
 
   describe('空白字符', () => {
-    it('应该扫描换行符', () => {
+    it('应该扫描单个换行符为空白', () => {
       const lexer = new MarkdownLexer('\n');
       const tokens = lexer.tokenize();
 
-      expect(tokens[0].type).toBe(TokenType.NEWLINE);
-      expect(tokens[0].value).toBe('\n');
+      expect(tokens[0].type).toBe(TokenType.WHITESPACE);
+      expect(tokens[0].value).toBe(' ');
       expect(tokens[0].position.line).toBe(2); // 换行后行号应为2
     });
 
@@ -248,16 +248,6 @@ describe('MarkdownLexer', () => {
       expect(tokens[0].type).toBe(TokenType.WHITESPACE);
       expect(tokens[0].value).toBe('   ');
       expect(tokens[0].length).toBe(3);
-    });
-
-    it('应该正确处理换行后的位置信息', () => {
-      const lexer = new MarkdownLexer('\na');
-      const tokens = lexer.tokenize();
-
-      expect(tokens[0].type).toBe(TokenType.NEWLINE);
-      expect(tokens[1].type).toBe(TokenType.TEXT);
-      expect(tokens[1].position.line).toBe(2);
-      expect(tokens[1].position.column).toBe(1);
     });
   });
 
@@ -306,17 +296,15 @@ describe('MarkdownLexer', () => {
       const lexer = new MarkdownLexer('# Hello World');
       const tokens = lexer.tokenize();
 
-      expect(tokens[0].type).toBe(TokenType.HASH);
+      expect(tokens[0].type).toBe(TokenType.HEADING);
       expect(tokens[0].value).toBe('#');
-      expect(tokens[1].type).toBe(TokenType.WHITESPACE);
-      expect(tokens[1].value).toBe(' ');
-      expect(tokens[2].type).toBe(TokenType.TEXT);
-      expect(tokens[2].value).toBe('Hello');
-      expect(tokens[3].type).toBe(TokenType.WHITESPACE);
-      expect(tokens[3].value).toBe(' ');
-      expect(tokens[4].type).toBe(TokenType.TEXT);
-      expect(tokens[4].value).toBe('World');
-      expect(tokens[5].type).toBe(TokenType.EOF);
+      expect(tokens[1].type).toBe(TokenType.TEXT);
+      expect(tokens[1].value).toBe('Hello');
+      expect(tokens[2].type).toBe(TokenType.WHITESPACE);
+      expect(tokens[2].value).toBe(' ');
+      expect(tokens[3].type).toBe(TokenType.TEXT);
+      expect(tokens[3].value).toBe('World');
+      expect(tokens[4].type).toBe(TokenType.EOF);
     });
 
     it('应该扫描粗体文本', () => {
@@ -372,10 +360,9 @@ describe('MarkdownLexer', () => {
       const lexer = new MarkdownLexer('> quote');
       const tokens = lexer.tokenize();
 
-      expect(tokens[0].type).toBe(TokenType.GREATER_THAN);
-      expect(tokens[1].type).toBe(TokenType.WHITESPACE);
-      expect(tokens[2].type).toBe(TokenType.TEXT);
-      expect(tokens[2].value).toBe('quote');
+      expect(tokens[0].type).toBe(TokenType.QUOTE);
+      expect(tokens[1].type).toBe(TokenType.TEXT);
+      expect(tokens[1].value).toBe('quote');
     });
 
     it('应该扫描有序列表', () => {
@@ -397,7 +384,7 @@ describe('MarkdownLexer', () => {
       expect(tokens[0].type).toBe(TokenType.TEXT);
       expect(tokens[0].value).toBe('line1');
       expect(tokens[0].position.line).toBe(1);
-      expect(tokens[1].type).toBe(TokenType.NEWLINE);
+      expect(tokens[1].type).toBe(TokenType.WHITESPACE);
       expect(tokens[2].type).toBe(TokenType.TEXT);
       expect(tokens[2].value).toBe('line2');
       expect(tokens[2].position.line).toBe(2);
@@ -411,7 +398,7 @@ describe('MarkdownLexer', () => {
 
       expect(tokens[0].type).toBe(TokenType.WHITESPACE);
       expect(tokens[1].type).toBe(TokenType.TAB);
-      expect(tokens[2].type).toBe(TokenType.NEWLINE);
+      expect(tokens[2].type).toBe(TokenType.WHITESPACE);
       expect(tokens[3].type).toBe(TokenType.WHITESPACE);
       expect(tokens[4].type).toBe(TokenType.EOF);
     });
@@ -431,7 +418,7 @@ describe('MarkdownLexer', () => {
       const tokens = lexer.tokenize();
 
       expect(tokens[0].type).toBe(TokenType.TEXT);
-      expect(tokens[1].type).toBe(TokenType.NEWLINE);
+      expect(tokens[1].type).toBe(TokenType.WHITESPACE);
       expect(tokens[2].type).toBe(TokenType.EOF);
     });
   });

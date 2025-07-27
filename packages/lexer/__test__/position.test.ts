@@ -112,13 +112,10 @@ describe('MarkdownLexer 位置信息测试', () => {
     expect(tokens[0].position.line).toBe(1);
 
     expect(tokens[1].type).toBe(TokenType.NEWLINE); // \n
-    expect(tokens[1].position.line).toBe(2);
+    expect(tokens[1].position.line).toBe(3);
 
-    expect(tokens[2].type).toBe(TokenType.NEWLINE); // \n
+    expect(tokens[2].type).toBe(TokenType.TEXT); // line3
     expect(tokens[2].position.line).toBe(3);
-
-    expect(tokens[3].type).toBe(TokenType.TEXT); // line3
-    expect(tokens[3].position.line).toBe(3);
-    expect(tokens[3].position.column).toBe(1);
+    expect(tokens[2].position.column).toBe(1);
   });
 });

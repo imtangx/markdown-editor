@@ -169,8 +169,7 @@ export class MarkdownLexer {
       this.advance(); // 跳过空格
       return this.createToken(TokenType.HEADING, '#'.repeat(count));
     } else {
-      this.offset = startOffset; // 回退到初始位置
-      return this.scanText(); // 按普通文本处理
+      return this.createToken(TokenType.HASH, '#'.repeat(count));
     }
   }
 
@@ -186,7 +185,7 @@ export class MarkdownLexer {
       return this.createToken(TokenType.BOLD, '**');
     }
 
-    return this.createToken(TokenType.ITALIC, '*');
+    return this.createToken(TokenType.ASTERISK, '*');
   }
 
   /**

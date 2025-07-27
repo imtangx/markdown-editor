@@ -332,7 +332,7 @@ export class RecursiveDescentParser implements Parser {
     switch (token.type) {
       case TokenType.BOLD:
         return this.parseBold();
-      case TokenType.ITALIC:
+      case TokenType.ASTERISK:
         return this.parseItalic();
       case TokenType.CODE:
         return this.parseCode();
@@ -400,18 +400,18 @@ export class RecursiveDescentParser implements Parser {
    */
   private parseItalic(): ItalicNode | TextNode {
     const startIndex = this.current;
-    const startToken = this.consume(TokenType.ITALIC, 'Expected italic token');
+    const startToken = this.consume(TokenType.ASTERISK, 'Expected italic token');
     const children: InlineNode[] = [];
 
     // 收集内容，直到遇到结束的 *、换行符或文档结束
-    while (!this.check(TokenType.ITALIC) && !this.check(TokenType.NEWLINE) && !this.isAtEnd()) {
+    while (!this.check(TokenType.ASTERISK) && !this.check(TokenType.NEWLINE) && !this.isAtEnd()) {
       const inline = this.parseInline();
       if (inline) children.push(inline);
     }
 
     // 如果遇到闭合 *，则消费它
-    if (this.check(TokenType.ITALIC)) {
-      this.consume(TokenType.ITALIC, 'Expected closing * for italic text');
+    if (this.check(TokenType.ASTERISK)) {
+      this.consume(TokenType.ASTERISK, 'Expected closing * for italic text');
       return nodeFactory.createItalic(children, {
         line: startToken.position.line,
         column: startToken.position.column,

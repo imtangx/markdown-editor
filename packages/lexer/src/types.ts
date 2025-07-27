@@ -97,5 +97,5 @@ export interface Token {
 /**
  * 词法分析器配置
  */
-// eslint-disable-next-line @typescript-eslint/no-empty-object-type
+
 export interface LexerOptions {}
