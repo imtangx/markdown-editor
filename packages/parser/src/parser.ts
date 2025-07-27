@@ -338,6 +338,18 @@ export class RecursiveDescentParser implements Parser {
         return this.parseCode();
       case TokenType.LINK:
         return this.parseLink();
+      case TokenType.BRACKET_OPEN: {
+        const linkNode = this.tryParseLink();
+        if (linkNode) return linkNode;
+        // 如果不是链接，当作普通文本处理
+        return this.parseText();
+      }
+      case TokenType.EXCLAMATION: {
+        const imageNode = this.tryParseImage();
+        if (imageNode) return imageNode;
+        // 如果不是图片，当作普通文本处理
+        return this.parseText();
+      }
       case TokenType.IMAGE:
         return this.parseImage();
       case TokenType.NEWLINE:
@@ -474,6 +486,171 @@ export class RecursiveDescentParser implements Parser {
       column: token.position.column,
       offset: token.position.offset,
     });
+  }
+
+  /**
+   * 尝试解析链接 [text](url)
+   */
+  private tryParseLink(): LinkNode | null {
+    const startPos = this.current;
+    const startToken = this.peek();
+
+    try {
+      // 检查模式：[text](url)
+      if (!this.check(TokenType.BRACKET_OPEN)) {
+        return null;
+      }
+
+      this.advance(); // 消费 [
+
+      // 收集链接文本，直到遇到 ]
+      const textNodes: InlineNode[] = [];
+      while (!this.isAtEnd() && !this.check(TokenType.BRACKET_CLOSE)) {
+        if (this.check(TokenType.NEWLINE)) {
+          // 链接不能跨行
+          this.current = startPos;
+          return null;
+        }
+
+        // 避免嵌套链接，只解析基本的行内元素
+        const token = this.peek();
+        if (token.type === TokenType.BRACKET_OPEN || token.type === TokenType.EXCLAMATION) {
+          // 链接文本中不允许嵌套链接或图片，当作普通文本处理
+          const textToken = this.advance();
+          textNodes.push(nodeFactory.createText(textToken.value || '', textToken.position));
+        } else {
+          const inline = this.parseInline();
+          if (inline) {
+            textNodes.push(inline);
+          }
+        }
+      }
+
+      if (!this.check(TokenType.BRACKET_CLOSE)) {
+        this.current = startPos;
+        return null;
+      }
+
+      this.advance(); // 消费 ]
+
+      // 检查是否跟着 (
+      if (!this.check(TokenType.PAREN_OPEN)) {
+        this.current = startPos;
+        return null;
+      }
+
+      this.advance(); // 消费 (
+
+      // 收集URL
+      let url = '';
+      while (!this.isAtEnd() && !this.check(TokenType.PAREN_CLOSE)) {
+        if (this.check(TokenType.NEWLINE)) {
+          // URL不能跨行
+          this.current = startPos;
+          return null;
+        }
+
+        const token = this.advance();
+        url += token.value || '';
+      }
+
+      if (!this.check(TokenType.PAREN_CLOSE)) {
+        this.current = startPos;
+        return null;
+      }
+
+      this.advance(); // 消费 )
+
+      return nodeFactory.createLink(url, textNodes, {
+        line: startToken.position.line,
+        column: startToken.position.column,
+        offset: startToken.position.offset,
+      });
+    } catch {
+      this.current = startPos;
+      return null;
+    }
+  }
+
+  /**
+   * 尝试解析图片 ![alt](src)
+   */
+  private tryParseImage(): ImageNode | null {
+    const startPos = this.current;
+    const startToken = this.peek();
+
+    try {
+      // 检查模式：![alt](src)
+      if (!this.check(TokenType.EXCLAMATION)) {
+        return null;
+      }
+
+      this.advance(); // 消费 !
+
+      if (!this.check(TokenType.BRACKET_OPEN)) {
+        this.current = startPos;
+        return null;
+      }
+
+      this.advance(); // 消费 [
+
+      // 收集alt文本
+      let alt = '';
+      while (!this.isAtEnd() && !this.check(TokenType.BRACKET_CLOSE)) {
+        if (this.check(TokenType.NEWLINE)) {
+          // alt不能跨行
+          this.current = startPos;
+          return null;
+        }
+
+        const token = this.advance();
+        alt += token.value || '';
+      }
+
+      if (!this.check(TokenType.BRACKET_CLOSE)) {
+        this.current = startPos;
+        return null;
+      }
+
+      this.advance(); // 消费 ]
+
+      // 检查是否跟着 (
+      if (!this.check(TokenType.PAREN_OPEN)) {
+        this.current = startPos;
+        return null;
+      }
+
+      this.advance(); // 消费 (
+
+      // 收集src
+      let src = '';
+      while (!this.isAtEnd() && !this.check(TokenType.PAREN_CLOSE)) {
+        if (this.check(TokenType.NEWLINE)) {
+          // src不能跨行
+          this.current = startPos;
+          return null;
+        }
+
+        const token = this.advance();
+        src += token.value || '';
+      }
+
+      if (!this.check(TokenType.PAREN_CLOSE)) {
+        this.current = startPos;
+        return null;
+      }
+
+      this.advance(); // 消费 )
+
+      return nodeFactory.createImage(src, alt, {
+        line: startToken.position.line,
+        column: startToken.position.column,
+        offset: startToken.position.offset,
+      });
+    } catch {
+      this.current = startPos;
+      return null;
+    }
   }
 
   /**
