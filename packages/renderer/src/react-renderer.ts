@@ -64,6 +64,7 @@ export interface ReactRenderOptions {
 export class ReactRenderer implements Visitor<ReactElement | ReactNode> {
   private options: ReactRenderOptions;
   private React: any;
+  private listNestLevel = 0; // 跟踪列表嵌套层级
 
   constructor(React: any, options: ReactRenderOptions = {}) {
     this.React = React;
@@ -178,13 +179,26 @@ export class ReactRenderer implements Visitor<ReactElement | ReactNode> {
   }
 
   visitList(node: ListNode): ReactElement {
+    const currentNestLevel = this.listNestLevel;
+    this.listNestLevel++; // 进入嵌套层级
+
     const Component = this.options.components?.list || (node.ordered ? 'ol' : 'ul');
     const children = this.renderChildren(node.children || []);
-    const props = this.getProps('list', {
+
+    const baseProps: Record<string, any> = {
       ordered: node.ordered,
       start: node.ordered && node.start !== 1 ? node.start : undefined,
       className: this.getClassName('list', node.ordered ? 'ordered' : 'unordered'),
-    });
+    };
+
+    // 为嵌套列表添加padding-left样式（每层级一个tab=16px）
+    if (currentNestLevel > 0) {
+      baseProps.style = { paddingLeft: `${currentNestLevel * 16}px` };
+    }
+
+    const props = this.getProps('list', baseProps);
+
+    this.listNestLevel = currentNestLevel; // 恢复嵌套层级
 
     return this.React.createElement(Component, props, ...children);
   }
