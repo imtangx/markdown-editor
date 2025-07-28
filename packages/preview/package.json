@@ -1,0 +1,38 @@
+{
+  "name": "@markdown-editor/preview",
+  "version": "0.0.0",
+  "description": "Custom markdown preview renderer",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "build:watch": "tsup --watch",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest --watch"
+  },
+  "dependencies": {
+    "@markdown-editor/shared": "workspace:*",
+    "@markdown-editor/lexer": "workspace:*",
+    "@markdown-editor/ast": "workspace:*",
+    "@markdown-editor/parser": "workspace:*",
+    "@markdown-editor/renderer": "workspace:*"
+  },
+  "devDependencies": {
+    "tsup": "^8.3.5",
+    "typescript": "^5.8.3",
+    "vitest": "^3.2.4"
+  }
+}
