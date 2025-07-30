@@ -292,9 +292,15 @@ export class MarkdownEditorCore {
 
     this.currentTheme = theme;
 
+    // 保存当前编辑器内容
+    const currentContent = this.editor.getContent();
+
     // 更新编辑器主题
     this.editor.destroy();
     this.initializeEditor();
+
+    // 恢复编辑器内容
+    this.editor.setContent(currentContent);
 
     // 更新预览样式
     const previewStyles = this.getPreviewStyles();
