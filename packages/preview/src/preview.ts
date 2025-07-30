@@ -1,7 +1,7 @@
 import { MarkdownLexer } from '@markdown-editor/lexer';
 import { RecursiveDescentParser } from '@markdown-editor/parser';
 import { HTMLRenderer } from '@markdown-editor/renderer';
-import type { AnyNode } from '@markdown-editor/ast';
+import { throttle } from '@markdown-editor/shared';
 
 /**
  * 预览配置接口
@@ -13,10 +13,8 @@ export interface PreviewConfig {
   className?: string;
   /** 自定义样式 */
   styles?: Record<string, string>;
-  /** 是否启用实时更新 */
-  liveUpdate?: boolean;
-  /** 更新防抖时间（毫秒） */
-  debounceTime?: number;
+  /** 更新节流时间（毫秒） */
+  throttleTime?: number;
   /** 滚动回调 */
   onScroll?: (event: PreviewScrollEvent) => void;
 }
@@ -44,16 +42,15 @@ export class MarkdownPreview {
   private renderer: HTMLRenderer;
   private container: HTMLElement;
   private config: PreviewConfig;
-  private updateTimeout?: number;
   private currentContent: string = '';
+  private throttledRender: () => void;
 
   constructor(container: HTMLElement, config: PreviewConfig = {}) {
     this.container = container;
     this.config = {
       enableSyntaxHighlight: true,
       className: 'markdown-preview',
-      liveUpdate: true,
-      debounceTime: 300,
+      throttleTime: 100,
       ...config,
     };
 
@@ -61,6 +58,7 @@ export class MarkdownPreview {
     this.parser = new RecursiveDescentParser();
     this.renderer = new HTMLRenderer();
 
+    this.throttledRender = throttle(this.doRender, this.config.throttleTime || 100);
     this.setupContainer();
     this.setupEventListeners();
   }
@@ -115,45 +113,36 @@ export class MarkdownPreview {
     });
   }
 
+  doRender() {
+    try {
+      // 词法分析
+      const lexer = new MarkdownLexer(this.currentContent);
+      const tokens = lexer.tokenize();
+
+      // 语法分析
+      const ast = this.parser.parse(tokens);
+
+      // 渲染为HTML
+      const html = this.renderer.render(ast);
+
+      // 更新容器内容
+      this.container.innerHTML = html;
+
+      // 后处理
+      this.postProcess();
+    } catch (error) {
+      console.error('Preview rendering failed:', error);
+      this.renderError(error instanceof Error ? error.message : String(error));
+    }
+  }
+
   /**
    * 渲染markdown内容
    */
   render(content: string): void {
     if (content === this.currentContent) return;
     this.currentContent = content;
-
-    if (this.config.liveUpdate && this.updateTimeout) {
-      clearTimeout(this.updateTimeout);
-    }
-
-    const doRender = () => {
-      try {
-        // 词法分析
-        const lexer = new MarkdownLexer(content);
-        const tokens = lexer.tokenize();
-
-        // 语法分析
-        const ast = this.parser.parse(tokens);
-
-        // 渲染为HTML
-        const html = this.renderer.render(ast);
-
-        // 更新容器内容
-        this.container.innerHTML = html;
-
-        // 后处理
-        this.postProcess();
-      } catch (error) {
-        console.error('Preview rendering failed:', error);
-        this.renderError(error instanceof Error ? error.message : String(error));
-      }
-    };
-
-    if (this.config.liveUpdate && this.config.debounceTime && this.config.debounceTime > 0) {
-      this.updateTimeout = window.setTimeout(doRender, this.config.debounceTime);
-    } else {
-      doRender();
-    }
+    this.throttledRender();
   }
 
   /**
@@ -286,10 +275,6 @@ export class MarkdownPreview {
    * 销毁预览器
    */
   destroy(): void {
-    if (this.updateTimeout) {
-      clearTimeout(this.updateTimeout);
-    }
-
     this.container.removeEventListener('scroll', this.handleScroll.bind(this));
 
     // 清空内容
